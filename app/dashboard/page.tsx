@@ -13,6 +13,9 @@ export default function DashboardPage() {
   const [bankroll, setBankroll] = useState(0)
   const [winRate, setWinRate] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [editingStrategyId, setEditingStrategyId] = useState<number | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
   const router = useRouter()
 
   useEffect(() => {
@@ -165,30 +168,105 @@ export default function DashboardPage() {
         key={strategy.id}
         className="bg-black p-4 rounded-xl"
       >
-        <a
-  href={`/dashboard/${strategy.id}`}
-  className="text-green-400 hover:text-green-300"
->
-  <div>
-  <h4 className="text-green-400 font-bold">
-    {strategy.name}
-  </h4>
+        {editingStrategyId === strategy.id ? (
+          <div>
+            <input
+              className="w-full bg-black border border-zinc-700 p-3 rounded-xl mb-2"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Strategy name"
+            />
+            <input
+              className="w-full bg-black border border-zinc-700 p-3 rounded-xl mb-2"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Description"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  // save
+                  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                  if (sessionError || !session) {
+                    router.replace('/auth')
+                    return
+                  }
+                  const { error, data: updated } = await supabase
+                    .from('strategies')
+                    .update({ name: editName, description: editDescription })
+                    .eq('id', strategy.id)
+                    .eq('user_id', session.user.id)
+                    .select()
+                    .single()
 
-  <p className="text-zinc-400 text-sm">
-  ID: {strategy.id}
-</p>
-</div>
-</a>
-<button
-  onClick={() => {
-    const updated = strategies.filter((s) => s.id !== strategy.id)
-    setStrategies(updated)
-    localStorage.setItem("strategies", JSON.stringify(updated))
-  }}
-  className="text-red-400 hover:text-red-300"
->
-  Delete
-</button>
+                  if (error) {
+                    console.error("Update strategy error:", error)
+                    alert(JSON.stringify(error, null, 2))
+                    return
+                  }
+
+                  setStrategies((prev) => prev.map((s) => (s.id === strategy.id ? updated : s)))
+                  setEditingStrategyId(null)
+                }}
+                className="rounded-xl bg-green-500 px-4 py-2 text-black font-bold"
+              >
+                Save
+              </button>
+
+              <button
+                onClick={() => setEditingStrategyId(null)}
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <a href={`/dashboard/${strategy.id}`} className="text-green-400 hover:text-green-300">
+              <div>
+                <h4 className="text-green-400 font-bold">{strategy.name}</h4>
+                <p className="text-zinc-400 text-sm">ID: {strategy.id}</p>
+              </div>
+            </a>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setEditingStrategyId(strategy.id)
+                  setEditName(strategy.name || '')
+                  setEditDescription(strategy.description || '')
+                }}
+                className="text-zinc-200 hover:text-green-300"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (!confirm('Supprimer cette stratégie ? Cette action est irréversible.')) return
+                  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+                  if (sessionError || !session) {
+                    router.replace('/auth')
+                    return
+                  }
+
+                  const { error } = await supabase.from('strategies').delete().eq('id', strategy.id).eq('user_id', session.user.id)
+                  if (error) {
+                    console.error(error)
+                    alert('Erreur lors de la suppression')
+                    return
+                  }
+
+                  setStrategies((prev) => prev.filter((s) => s.id !== strategy.id))
+                }}
+                className="text-red-400 hover:text-red-300"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     ))
   )}
