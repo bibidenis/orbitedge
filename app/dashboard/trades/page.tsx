@@ -1,27 +1,71 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 import Sidebar from "../Sidebar"
 
 export default function TradesPage() {
   const [trades, setTrades] = useState<any[]>([])
 const [search, setSearch] = useState("")
+  const router = useRouter()
+
   useEffect(() => {
-    const strategies = JSON.parse(localStorage.getItem("strategies") || "[]")
+    async function loadTrades() {
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession()
 
-    const allTrades = strategies.flatMap((strategy: any) =>
-      (strategy.history || []).map((trade: any) => ({
-        ...trade,
-        strategyName: strategy.name,
-      }))
-    )
+      if (sessionError || !session) {
+        router.replace("/auth")
+        return
+      }
 
-    setTrades(allTrades.reverse())
-  }, [])
-const filteredTrades = trades.filter((trade) =>
-  (trade.match || "")
-    .toLowerCase()
-    .includes(search.toLowerCase())
+      const { data: strategies, error: strategiesError } = await supabase
+        .from("strategies")
+        .select("id, name")
+        .eq("user_id", session.user.id)
+
+      if (strategiesError) {
+        console.error(strategiesError)
+        return
+      }
+
+      const strategyIds = (strategies || []).map((strategy) => strategy.id)
+
+      const { data: tradesData, error: tradesError } = strategyIds.length
+        ? await supabase
+            .from("trades")
+            .select("*")
+            .in("strategy_id", strategyIds)
+            .order("created_at", { ascending: false })
+        : { data: [] }
+
+      if (tradesError) {
+        console.error(tradesError)
+        return
+      }
+
+      const normalizedTrades = (tradesData || []).map((trade) => {
+        const strategy = strategies?.find(
+          (strategyItem: any) => strategyItem.id === trade.strategy_id
+        )
+
+        return {
+          ...trade,
+          strategyName: strategy?.name ?? "Unknown",
+        }
+      })
+
+      setTrades(normalizedTrades)
+    }
+
+    loadTrades()
+  }, [router])
+
+  const filteredTrades = trades.filter((trade) =>
+    (trade.match || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
 )
 function exportCSV() {
   const headers = ["Date", "Stratégie", "Match", "Cote", "Stake", "Résultat", "Profit"]

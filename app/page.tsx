@@ -6,9 +6,12 @@ export default function Home() {
           <div className="text-2xl font-bold tracking-tight">
             Orbit<span className="text-emerald-400">Edge</span>
           </div>
-          <button className="rounded-full border border-white/10 px-5 py-2 text-sm text-zinc-300 hover:bg-white/10">
+          <a
+            href="/auth"
+            className="rounded-full border border-white/10 px-5 py-2 text-sm text-zinc-300 hover:bg-white/10"
+          >
             Sign in
-          </button>
+          </a>
         </nav>
 
         <div className="grid flex-1 items-center gap-12 py-20 lg:grid-cols-2">

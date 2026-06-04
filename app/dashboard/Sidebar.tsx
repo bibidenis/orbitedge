@@ -10,21 +10,21 @@ export default function Sidebar() {
           Dashboard
         </a>
 
-        <a href="#" className="text-zinc-300 hover:text-green-400">
+        <a href="/dashboard/trades" className="text-zinc-300 hover:text-green-400">
           Trades
         </a>
 
-        <a href="#" className="text-zinc-300 hover:text-green-400">
+        <a href="/dashboard" className="text-zinc-300 hover:text-green-400">
           Strategies
         </a>
-<a href="/dashboard/new-strategy" className="text-zinc-300 hover:text-green-500">
-  New Strategy
-</a>
-        <a href="#" className="text-zinc-300 hover:text-green-400">
+        <a href="/dashboard/new-strategy" className="text-zinc-300 hover:text-green-500">
+          New Strategy
+        </a>
+        <a href="/dashboard/analytics" className="text-zinc-300 hover:text-green-400">
           Analytics
         </a>
 
-        <a href="#" className="text-zinc-300 hover:text-green-400">
+        <a href="/dashboard/settings" className="text-zinc-300 hover:text-green-400">
           Settings
         </a>
       </nav>

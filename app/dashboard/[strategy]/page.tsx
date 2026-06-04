@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import Sidebar from "../Sidebar"
 import { supabase } from "@/lib/supabase"
 
 export default function StrategyPage() {
   const params = useParams()
+  const router = useRouter()
   const strategyId = Number(params.strategy)
 
   const [strategy, setStrategy] = useState<any>(null)
@@ -16,10 +18,21 @@ export default function StrategyPage() {
   const [bookmaker, setBookmaker] = useState("")
 
   async function loadStrategy() {
+    const { data: { session }, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !session) {
+      router.replace("/auth")
+      return
+    }
+
+    const userId = session.user.id
+
     const { data, error } = await supabase
       .from("strategies")
       .select("*")
       .eq("id", strategyId)
+      .eq("user_id", userId)
       .single()
 
     if (error) {
@@ -43,6 +56,16 @@ export default function StrategyPage() {
   }, [strategyId])
 
   async function updateStats(type: "win" | "loss") {
+    const { data: { session }, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !session) {
+      alert("Connecte-toi pour ajouter un trade")
+      router.replace("/auth")
+      return
+    }
+
+    const userId = session.user.id
     const profitValue =
       type === "win"
         ? (Number(odds) - 1) * Number(stake)
@@ -51,6 +74,7 @@ export default function StrategyPage() {
     const { error } = await supabase.from("trades").insert([
       {
         strategy_id: strategyId,
+        user_id: userId,
         odds: Number(odds),
         stake: Number(stake),
         result: type === "win" ? "WIN" : "LOSS",
@@ -110,6 +134,14 @@ const roi =
   trades > 0 ? (profit / trades).toFixed(2) : "0"
   return (
     <main className="min-h-screen bg-black text-white p-10">
+      <div className="mb-8">
+        <a
+          href="/dashboard"
+          className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-200 hover:bg-white/10"
+        >
+          ← Dashboard
+        </a>
+      </div>
       <h1 className="text-5xl font-bold text-green-500 mb-8">{strategy.name}</h1>
 
       <div className="bg-zinc-900 p-6 rounded-2xl mb-8">

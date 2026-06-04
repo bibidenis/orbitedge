@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Sidebar from "../Sidebar"
 import { supabase } from "../../../lib/supabase"
 
 export default function NewStrategyPage() {
@@ -9,9 +10,18 @@ export default function NewStrategyPage() {
 
   async function handleSave() {
     if (!name.trim()) {
-  alert("Entre un nom de stratégie")
-  return
-}
+      alert("Entre un nom de stratégie")
+      return
+    }
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+
+    if (sessionError || !sessionData?.session?.user) {
+      alert("Connecte-toi pour créer une stratégie")
+      return
+    }
+
     const { error } = await supabase.from("strategies").insert([
       {
         name,
@@ -20,27 +30,41 @@ export default function NewStrategyPage() {
         winrate: 0,
         roi: 0,
         profit: 0,
+        user_id: sessionData.session.user.id,
       },
     ])
 
     if (error) {
-  console.error(error)
-  alert(JSON.stringify(error))
-  return
-}
+      console.error(error)
+      alert(JSON.stringify(error))
+      return
+    }
+
     alert("Stratégie enregistrée dans Supabase !")
     setName("")
     setDescription("")
   }
 
   return (
-    <main className="min-h-screen bg-black text-white p-10">
-      <h1 className="text-5xl font-bold text-green-500 mb-8">
-        New Strategy
-      </h1>
+    <div className="flex">
+      <Sidebar />
 
-      <div className="bg-zinc-900 p-6 rounded-2xl max-w-xl space-y-4">
-        <input
+      <main className="flex-1 min-h-screen bg-black text-white p-10">
+        <div className="mb-8">
+          <a
+            href="/dashboard"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-200 hover:bg-white/10"
+          >
+            ← Dashboard
+          </a>
+        </div>
+
+        <h1 className="text-5xl font-bold text-green-500 mb-8">
+          New Strategy
+        </h1>
+
+        <div className="bg-zinc-900 p-6 rounded-2xl max-w-xl space-y-4">
+          <input
           className="w-full bg-black border border-zinc-700 p-3 rounded"
           placeholder="Strategy name"
           value={name}
@@ -61,6 +85,7 @@ export default function NewStrategyPage() {
           Save Strategy
         </button>
       </div>
-    </main>
+        </main>
+  </div>
   )
 }

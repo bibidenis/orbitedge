@@ -1,64 +1,119 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Sidebar from "./Sidebar"
 import { supabase } from "@/lib/supabase"
+
 export default function DashboardPage() {
   const [strategies, setStrategies] = useState<any[]>([])
-const [profit, setProfit] = useState(0)
-const [roi, setRoi] = useState(0)
-const [trades, setTrades] = useState(0)
-const [bankroll, setBankroll] = useState(0)
-const [winRate, setWinRate] = useState(0)
- useEffect(() => {
-  async function loadDashboard() {
-    const { data: strategiesData, error: strategiesError } = await supabase
-      .from("strategies")
-      .select("*")
+  const [profit, setProfit] = useState(0)
+  const [roi, setRoi] = useState(0)
+  const [trades, setTrades] = useState(0)
+  const [bankroll, setBankroll] = useState(0)
+  const [winRate, setWinRate] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-    if (strategiesError) {
-      console.error(strategiesError)
-      return
+  useEffect(() => {
+    async function loadDashboard() {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        router.replace("/auth")
+        return
+      }
+
+      const userId = session.user.id
+
+      const { data: strategiesData, error: strategiesError } = await supabase
+        .from("strategies")
+        .select("*")
+        .eq("user_id", userId)
+
+      if (strategiesError) {
+        console.error(strategiesError)
+        setLoading(false)
+        return
+      }
+
+      const strategyIds = (strategiesData || []).map((strategy) => strategy.id)
+
+      const { data: tradesData, error: tradesError } = strategyIds.length
+        ? await supabase
+            .from("trades")
+            .select("*")
+            .in("strategy_id", strategyIds)
+        : { data: [] }
+
+      if (tradesError) {
+        console.error(tradesError)
+        setLoading(false)
+        return
+      }
+
+      const totalProfit = (tradesData || []).reduce(
+        (sum, trade) => sum + Number(trade.profit || 0),
+        0
+      )
+
+      const totalTrades = tradesData?.length || 0
+
+      const wins = (tradesData || []).filter(
+        (trade) => trade.result === "WIN"
+      ).length
+      const currentBankroll = 100 + totalProfit
+
+      setStrategies(strategiesData || [])
+      setProfit(totalProfit)
+      setTrades(totalTrades)
+      setBankroll(currentBankroll)
+      setWinRate(totalTrades > 0 ? (wins / totalTrades) * 100 : 0)
+      setRoi(totalTrades > 0 ? totalProfit / totalTrades : 0)
+      setLoading(false)
     }
 
-    const { data: tradesData, error: tradesError } = await supabase
-      .from("trades")
-      .select("*")
+    loadDashboard()
+  }, [router])
 
-    if (tradesError) {
-      console.error(tradesError)
-      return
-    }
-
-    const totalProfit = (tradesData || []).reduce(
-      (sum, trade) => sum + Number(trade.profit || 0),
-      0
-    )
-
-    const totalTrades = tradesData?.length || 0
-
-    const wins = (tradesData || []).filter(
-      (trade) => trade.result === "WIN"
-    ).length
-    const bankroll = 100 + totalProfit
-    setStrategies(strategiesData || [])
-    setProfit(totalProfit)
-    setTrades(totalTrades)
-    setBankroll(bankroll)
-    setWinRate(totalTrades > 0 ? (wins / totalTrades) * 100 : 0)
-    setRoi(totalTrades > 0 ? totalProfit / totalTrades : 0)
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.replace("/auth")
   }
 
-  loadDashboard()
-}, [])
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-zinc-400">Chargement du dashboard...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex">
       <Sidebar />
 
       <main className="flex-1 min-h-screen bg-black text-white p-8">
-        <h1 className="text-5xl font-bold text-green-500 mb-8">
-          OrbitEdge Dashboard
-        </h1>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-5xl font-bold text-green-500">
+              OrbitEdge Dashboard
+            </h1>
+            <p className="text-zinc-400">
+              Aperçu des stratégies et statistiques personnelles.
+            </p>
+          </div>
+
+          <button
+            onClick={handleSignOut}
+            className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white hover:bg-white/10"
+          >
+            Sign Out
+          </button>
+        </div>
 
         <div className="grid grid-cols-3 gap-6 mb-10">
           <div className="bg-zinc-900 p-6 rounded-2xl">

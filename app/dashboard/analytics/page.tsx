@@ -12,19 +12,44 @@ import {
   Cell,
 } from "recharts"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Sidebar from "../Sidebar"
 import { supabase } from "@/lib/supabase"
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<any[]>([])
   const [initialBankroll, setInitialBankroll] = useState(100)
+  const router = useRouter()
 
   useEffect(() => {
     async function loadAnalytics() {
-      const { data, error } = await supabase
-        .from("trades")
-        .select("*")
-        .order("created_at", { ascending: true })
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        router.replace("/auth")
+        return
+      }
+
+      const { data: strategies, error: strategiesError } = await supabase
+        .from("strategies")
+        .select("id")
+        .eq("user_id", session.user.id)
+
+      if (strategiesError) {
+        console.error(strategiesError)
+        return
+      }
+
+      const strategyIds = (strategies || []).map((strategy) => strategy.id)
+
+      const { data, error } = strategyIds.length
+        ? await supabase
+            .from("trades")
+            .select("*")
+            .in("strategy_id", strategyIds)
+            .order("created_at", { ascending: true })
+        : { data: [] }
 
       if (error) {
         console.error(error)
@@ -35,7 +60,7 @@ export default function AnalyticsPage() {
     }
 
     loadAnalytics()
-  }, [])
+  }, [router])
 
   const totalProfit = trades.reduce(
     (total, trade) => total + Number(trade.profit || 0),
