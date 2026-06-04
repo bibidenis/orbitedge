@@ -141,10 +141,17 @@ export default function StrategyPage() {
     await loadStrategy()
   }
 async function deleteTrade(id: number) {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !session) {
+    router.replace('/auth')
+    return
+  }
+
   const { error } = await supabase
     .from("trades")
     .delete()
     .eq("id", id)
+    .eq('user_id', session.user.id)
 
   if (error) {
     console.error(error)
