@@ -11,6 +11,9 @@ export default function StrategyPage() {
   const strategyId = Number(params.strategy)
 
   const [strategy, setStrategy] = useState<any>(null)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
   const [tradesHistory, setTradesHistory] = useState<any[]>([])
   const [match, setMatch] = useState("")
   const [odds, setOdds] = useState("")
@@ -54,6 +57,49 @@ export default function StrategyPage() {
   useEffect(() => {
     loadStrategy()
   }, [strategyId])
+
+  async function saveStrategyEdits() {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !session) {
+      router.replace('/auth')
+      return
+    }
+
+    const { error, data: updated } = await supabase
+      .from('strategies')
+      .update({ name: editName, description: editDescription })
+      .eq('id', strategyId)
+      .eq('user_id', session.user.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error(error)
+      alert('Erreur lors de la mise à jour')
+      return
+    }
+
+    setStrategy(updated)
+    setEditing(false)
+  }
+
+  async function deleteStrategy() {
+    if (!confirm('Supprimer cette stratégie ? Cette action est irréversible.')) return
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !session) {
+      router.replace('/auth')
+      return
+    }
+
+    const { error } = await supabase.from('strategies').delete().eq('id', strategyId).eq('user_id', session.user.id)
+    if (error) {
+      console.error(error)
+      alert('Erreur lors de la suppression')
+      return
+    }
+
+    router.replace('/dashboard')
+  }
 
   async function updateStats(type: "win" | "loss") {
     const { data: { session }, error: sessionError } =
@@ -142,7 +188,31 @@ const roi =
           ← Dashboard
         </a>
       </div>
-      <h1 className="text-5xl font-bold text-green-500 mb-8">{strategy.name}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        {editing ? (
+          <div className="flex-1">
+            <input className="w-full bg-black border border-zinc-700 p-3 rounded-xl mb-2" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <input className="w-full bg-black border border-zinc-700 p-3 rounded-xl mb-2" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+            <div className="flex gap-2">
+              <button onClick={saveStrategyEdits} className="rounded-xl bg-green-500 px-4 py-2 text-black font-bold">Save</button>
+              <button onClick={() => setEditing(false)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-5xl font-bold text-green-500">{strategy.name}</h1>
+            <div className="flex gap-3">
+              <button onClick={() => {
+                setEditing(true)
+                setEditName(strategy.name || '')
+                setEditDescription(strategy.description || '')
+              }} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-200">Edit</button>
+
+              <button onClick={deleteStrategy} className="rounded-xl bg-red-600 px-4 py-2 text-white">Delete</button>
+            </div>
+          </>
+        )}
+      </div>
 
       <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
         <h2 className="text-2xl font-bold mb-4">Statistiques de la stratégie</h2>
