@@ -121,6 +121,8 @@ export default function StrategyPage() {
       {
         strategy_id: strategyId,
         user_id: userId,
+        match,
+        bookmaker,
         odds: Number(odds),
         stake: Number(stake),
         result: type === "win" ? "WIN" : "LOSS",
@@ -248,20 +250,53 @@ const roi =
 
       <h2 className="text-2xl font-bold mb-4">Historique des trades</h2>
 
-      {tradesHistory.map((trade) => (
-        <div key={trade.id} className="bg-zinc-900 p-4 rounded-xl mb-3">
-          <p>Résultat : {trade.result}</p>
-          <p>Cote : {trade.odds}</p>
-          <p>Stake : {trade.stake}</p>
-          <p>Profit : {Number(trade.profit).toFixed(2)}u</p>
-          <button
-            onClick={() => deleteTrade(trade.id)}
-            className="bg-red-600 text-white px-3 py-1 rounded-lg mt-2"
->
-  Delete
-</button>
-        </div>
-      ))}
+      {tradesHistory.length === 0 ? (
+        <p className="text-zinc-400">Aucun trade enregistré pour cette stratégie.</p>
+      ) : (
+        tradesHistory.map((trade) => (
+          <div key={trade.id} className="bg-zinc-900 p-4 rounded-xl mb-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <span className="text-zinc-400 text-sm">
+                Date : {trade.created_at ? new Date(trade.created_at).toLocaleString() : trade.date ?? 'N/A'}
+              </span>
+              <span
+                className={`font-bold ${trade.result === 'WIN' ? 'text-green-500' : 'text-red-500'}`}
+              >
+                {trade.result}
+              </span>
+            </div>
+
+            <h3 className="text-xl font-semibold text-green-400 mb-1">
+              {trade.match || 'Match non renseigné'}
+            </h3>
+            <p className="text-zinc-400 mb-3">Bookmaker : {trade.bookmaker || 'N/A'}</p>
+
+            <div className="grid grid-cols-2 gap-4 text-sm text-zinc-300 mb-4">
+              <div className="space-y-1">
+                <p className="text-zinc-400">Cote</p>
+                <p>{trade.odds ?? 'N/A'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-zinc-400">Stake</p>
+                <p>{trade.stake ?? 'N/A'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-zinc-400">Profit</p>
+                <p className={trade.profit >= 0 ? 'text-green-500' : 'text-red-500'}>
+                  {Number(trade.profit || 0).toFixed(2)}u
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => deleteTrade(trade.id)}
+              className="bg-red-600 text-white px-3 py-1 rounded-lg"
+            >
+              Delete
+            </button>
+          </div>
+        ))
+      )}
     </main>
   )
 }
