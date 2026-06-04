@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Sidebar from "./Sidebar"
 import { supabase } from "@/lib/supabase"
+import { formatPercent, formatUnits, formatSignedUnits } from "@/lib/format"
 
 export default function DashboardPage() {
   const [strategies, setStrategies] = useState<any[]>([])
@@ -121,12 +122,16 @@ export default function DashboardPage() {
         <div className="grid grid-cols-3 gap-6 mb-10">
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Total Profit</p>
-            <h2 className="text-3xl font-bold text-green-400">+{profit}u</h2>
+            <h2 className="text-3xl font-bold text-green-400">
+              {formatSignedUnits(profit)}
+            </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">ROI</p>
-            <h2 className="text-3xl font-bold text-green-400">{roi}%</h2>
+            <h2 className="text-3xl font-bold text-green-400">
+              {formatPercent(roi)}%
+            </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
@@ -137,14 +142,14 @@ export default function DashboardPage() {
         <div className="bg-zinc-900 p-6 rounded-2xl">
   <p className="text-zinc-400">Bankroll</p>
   <h2 className="text-3xl font-bold text-green-500">
-    {bankroll.toFixed(2)}u
+    {formatUnits(bankroll)}u
   </h2>
 </div>
 
 <div className="bg-zinc-900 p-6 rounded-2xl">
   <p className="text-zinc-400">Win Rate</p>
   <h2 className="text-3xl font-bold text-green-500">
-    {winRate.toFixed(1)}%
+    {formatPercent(winRate)}%
   </h2>
 </div>
 

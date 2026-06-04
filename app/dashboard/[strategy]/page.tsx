@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Sidebar from "../Sidebar"
 import { supabase } from "@/lib/supabase"
+import { formatPercent } from "@/lib/format"
 
 export default function StrategyPage() {
   const params = useParams()
@@ -182,11 +183,9 @@ const losses = tradesHistory.filter(
   (trade) => trade.result === "LOSS"
 ).length
 
-const winRate =
-  trades > 0 ? ((wins / trades) * 100).toFixed(1) : "0"
+const winRate = trades > 0 ? (wins / trades) * 100 : 0
 
-const roi =
-  trades > 0 ? (profit / trades).toFixed(2) : "0"
+const roi = trades > 0 ? profit / trades : 0
   return (
     <main className="min-h-screen bg-black text-white p-10">
       <div className="mb-8">
@@ -226,11 +225,11 @@ const roi =
       <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
         <h2 className="text-2xl font-bold mb-4">Statistiques de la stratégie</h2>
         <p>Profit : {profit.toFixed(2)}u</p>
-        <p>ROI : {roi}%</p>
+        <p>ROI : {formatPercent(roi)}%</p>
         <p>Trades : {trades}</p>
         <p>Wins : {wins}</p>
         <p>Losses : {losses}</p>
-        <p>Win Rate : {winRate}%</p>
+        <p>Win Rate : {formatPercent(winRate)}%</p>
       </div>
 
       <div className="space-y-4 mb-8">
