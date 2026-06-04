@@ -75,6 +75,11 @@ export default function AnalyticsPage() {
   const winRate =
     totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : "0"
 
+  const totalStake = trades.reduce(
+    (total, trade) => total + Number(trade.stake || 0),
+    0
+  )
+
   const currentBankroll = initialBankroll + totalProfit
 
   const bestWin =
@@ -88,16 +93,35 @@ export default function AnalyticsPage() {
       : 0
 
   const averageRoi =
-    totalTrades > 0 ? (totalProfit / totalTrades).toFixed(2) : "0"
+    totalStake > 0 ? ((totalProfit / totalStake) * 100).toFixed(2) : "0"
 
   let bankroll = initialBankroll
+  let cumulativeProfit = 0
+  let cumulativeStake = 0
+  let winsCount = 0
 
-  const bankrollData = trades.map((trade, index) => {
-    bankroll += Number(trade.profit || 0)
+  const analyticsData = trades.map((trade, index) => {
+    const profit = Number(trade.profit || 0)
+    const stakeValue = Number(trade.stake || 0)
+    cumulativeProfit += profit
+    cumulativeStake += stakeValue
+    if (trade.result === "WIN") {
+      winsCount += 1
+    }
+
+    bankroll += profit
 
     return {
       trade: index + 1,
+      label: trade.created_at
+        ? new Date(trade.created_at).toLocaleDateString()
+        : trade.date || `Trade ${index + 1}`,
       bankroll,
+      cumulativeProfit,
+      avgRoi:
+        cumulativeStake > 0 ? (cumulativeProfit / cumulativeStake) * 100 : 0,
+      winRate:
+        index >= 0 ? (winsCount / (index + 1)) * 100 : 0,
     }
   })
 
@@ -209,51 +233,120 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold mb-4 text-green-500">
-          Bankroll Evolution
-        </h2>
-
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
-            <LineChart data={bankrollData}>
-              <XAxis dataKey="trade" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="bankroll"
-                stroke="#22c55e"
-                strokeWidth={3}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <h2 className="text-2xl font-bold mb-4 text-green-500">
-          Wins / Losses
-        </h2>
-
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={100}
-                label
-              >
-                {pieData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.name === "Wins" ? "#22c55e" : "#ef4444"}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section className="bg-zinc-900 p-6 rounded-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-green-500">
+              Bankroll Evolution
+            </h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData}>
+                  <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="bankroll"
+                    stroke="#22c55e"
+                    strokeWidth={3}
+                    dot={false}
                   />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <section className="bg-zinc-900 p-6 rounded-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-green-500">
+              Profit Cumulé
+            </h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData}>
+                  <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="cumulativeProfit"
+                    stroke="#22c55e"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <section className="bg-zinc-900 p-6 rounded-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-green-500">
+              ROI
+            </h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData}>
+                  <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
+                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="avgRoi"
+                    stroke="#38bdf8"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <section className="bg-zinc-900 p-6 rounded-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-green-500">
+              Win Rate
+            </h2>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={analyticsData}>
+                  <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
+                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="winRate"
+                    stroke="#f97316"
+                    strokeWidth={3}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
         </div>
+
+        <section className="bg-zinc-900 p-6 rounded-2xl mt-10">
+          <h2 className="text-2xl font-bold mb-4 text-green-500">Win / Loss Breakdown</h2>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={100}
+                  label
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.name === "Wins" ? "#22c55e" : "#ef4444"}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
       </main>
     </div>
   )
