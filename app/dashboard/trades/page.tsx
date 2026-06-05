@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { formatSignedUnits, formatUnits } from "@/lib/format"
 import Sidebar from "../Sidebar"
 
 export default function TradesPage() {
@@ -132,8 +133,8 @@ function exportCSV() {
                 </h2>
 
                 <p>Stratégie : {trade.strategyName}</p>
-                <p>Cote : {trade.odds}</p>
-                <p>Stake : {trade.stake}</p>
+                <p>Cote : {trade.odds !== undefined && trade.odds !== null && trade.odds !== "" ? formatUnits(Number(trade.odds)) : "N/A"}</p>
+                <p>Stake : {trade.stake !== undefined && trade.stake !== null && trade.stake !== "" ? formatUnits(Number(trade.stake)) : "N/A"}</p>
 
                 <p
                   className={
@@ -147,12 +148,12 @@ function exportCSV() {
 
                 <p
                   className={
-                    String(trade.profit).startsWith("+")
+                    Number(trade.profit || 0) >= 0
                       ? "text-green-500"
                       : "text-red-500"
                   }
                 >
-                  {trade.profit}
+                  {formatSignedUnits(Number(trade.profit || 0))}
                 </p>
               </div>
             ))}

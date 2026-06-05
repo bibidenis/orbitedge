@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Sidebar from "../Sidebar"
 import { supabase } from "@/lib/supabase"
-import { formatPercent } from "@/lib/format"
+import { formatPercent, formatSignedUnits, formatUnits } from "@/lib/format"
 
 export default function StrategyPage() {
   const params = useParams()
@@ -224,7 +224,7 @@ const roi = trades > 0 ? profit / trades : 0
 
       <div className="bg-zinc-900 p-6 rounded-2xl mb-8">
         <h2 className="text-2xl font-bold mb-4">Statistiques de la stratégie</h2>
-        <p>Profit : {profit.toFixed(2)}u</p>
+        <p>Profit : {formatUnits(profit)}u</p>
         <p>ROI : {formatPercent(roi)}%</p>
         <p>Trades : {trades}</p>
         <p>Wins : {wins}</p>
@@ -273,16 +273,16 @@ const roi = trades > 0 ? profit / trades : 0
             <div className="grid grid-cols-2 gap-4 text-sm text-zinc-300 mb-4">
               <div className="space-y-1">
                 <p className="text-zinc-400">Cote</p>
-                <p>{trade.odds ?? 'N/A'}</p>
+                <p>{trade.odds !== undefined && trade.odds !== null && trade.odds !== "" ? formatUnits(Number(trade.odds)) : 'N/A'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-zinc-400">Stake</p>
-                <p>{trade.stake ?? 'N/A'}</p>
+                <p>{trade.stake !== undefined && trade.stake !== null && trade.stake !== "" ? formatUnits(Number(trade.stake)) : 'N/A'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-zinc-400">Profit</p>
-                <p className={trade.profit >= 0 ? 'text-green-500' : 'text-red-500'}>
-                  {Number(trade.profit || 0).toFixed(2)}u
+                <p className={Number(trade.profit || 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                  {formatSignedUnits(Number(trade.profit || 0))}
                 </p>
               </div>
             </div>

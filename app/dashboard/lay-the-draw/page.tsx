@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { formatPercent, formatUnits } from "@/lib/format"
 export default function LayTheDrawPage() {
 const [profit, setProfit] = useState(198.4)
 const [roi, setRoi] = useState(7.21)
@@ -24,14 +25,14 @@ useEffect(() => {
         <div className="bg-zinc-900 p-6 rounded-2xl">
           <p className="text-zinc-400">Profit</p>
           <h2 className="text-3xl font-bold text-green-400">
-            +{profit}u
+            +{formatUnits(profit)}u
           </h2>
         </div>
 
         <div className="bg-zinc-900 p-6 rounded-2xl">
           <p className="text-zinc-400">ROI</p>
           <h2 className="text-3xl font-bold text-green-400">
-            {roi}%
+            {formatPercent(roi)}%
           </h2>
         </div>
 

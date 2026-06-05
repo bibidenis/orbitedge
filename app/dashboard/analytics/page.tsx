@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <Tooltip
-  formatter={(value) => [`${Number(value).toFixed(2)}u`, "Bankroll"]}
+  formatter={(value) => [formatUnits(Number(value)), "Bankroll"]}
 />
                   <Line
                     type="monotone"
@@ -289,7 +289,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
                   <Tooltip
-  formatter={(value) => [`${Number(value).toFixed(2)}%`, "ROI"]}
+  formatter={(value) => [formatPercent(Number(value)), "ROI"]}
 />
                   <Line
                     type="monotone"
@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
                   <Tooltip
-  formatter={(value) => [`${Number(value).toFixed(2)}%`, "Win Rate"]}
+  formatter={(value) => [formatPercent(Number(value)), "Win Rate"]}
 />
                   <Line
                     type="monotone"
