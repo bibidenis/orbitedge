@@ -15,6 +15,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Sidebar from "../Sidebar"
 import { supabase } from "@/lib/supabase"
+import { formatPercent, formatUnits } from "@/lib/format"
 
 export default function AnalyticsPage() {
   const [trades, setTrades] = useState<any[]>([])
@@ -62,25 +63,10 @@ export default function AnalyticsPage() {
     loadAnalytics()
   }, [router])
 
-  const totalProfit = trades.reduce(
-    (total, trade) => total + Number(trade.profit || 0),
-    0
-  )
-
   const totalTrades = trades.length
 
   const wins = trades.filter((trade) => trade.result === "WIN").length
   const losses = trades.filter((trade) => trade.result === "LOSS").length
-
-  const winRate =
-    totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : "0"
-
-  const totalStake = trades.reduce(
-    (total, trade) => total + Number(trade.stake || 0),
-    0
-  )
-
-  const currentBankroll = initialBankroll + totalProfit
 
   const bestWin =
     trades.length > 0
@@ -91,9 +77,6 @@ export default function AnalyticsPage() {
     trades.filter((trade) => Number(trade.profit || 0) < 0).length > 0
       ? Math.min(...trades.map((trade) => Number(trade.profit || 0)))
       : 0
-
-  const averageRoi =
-    totalStake > 0 ? ((totalProfit / totalStake) * 100).toFixed(2) : "0"
 
   let bankroll = initialBankroll
   let cumulativeProfit = 0
@@ -112,19 +95,31 @@ export default function AnalyticsPage() {
     bankroll += profit
 
     return {
-      trade: index + 1,
-      label: trade.created_at
-        ? new Date(trade.created_at).toLocaleDateString()
-        : trade.date || `Trade ${index + 1}`,
-      bankroll,
-      cumulativeProfit,
-      avgRoi:
-        cumulativeStake > 0 ? (cumulativeProfit / cumulativeStake) * 100 : 0,
-      winRate:
-        index >= 0 ? (winsCount / (index + 1)) * 100 : 0,
-    }
+  trade: index + 1,
+  label: `Trade ${index + 1}`,
+  bankroll,
+  cumulativeProfit,
+  avgRoi:
+    cumulativeStake > 0 ? (cumulativeProfit / cumulativeStake) * 100 : 0,
+  winRate:
+    index >= 0 ? (winsCount / (index + 1)) * 100 : 0,
+}
   })
 
+  // Use the last point from analyticsData as the single source of truth for cards
+  const lastPoint =
+    analyticsData.length > 0
+      ? analyticsData[analyticsData.length - 1]
+      : {
+          bankroll: initialBankroll,
+          cumulativeProfit: 0,
+          avgRoi: 0,
+          winRate: 0,
+        }
+  const currentBankroll = lastPoint?.bankroll ?? initialBankroll
+  const totalProfit = lastPoint?.cumulativeProfit ?? 0
+  const averageRoi = lastPoint?.avgRoi ?? 0
+  const winRate = lastPoint?.winRate ?? 0
   const pieData = [
     { name: "Wins", value: wins },
     { name: "Losses", value: losses },
@@ -188,7 +183,7 @@ export default function AnalyticsPage() {
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Total Profit</p>
             <h2 className="text-3xl font-bold text-green-500">
-              {totalProfit.toFixed(2)}u
+              {formatUnits(totalProfit)}u
             </h2>
           </div>
 
@@ -200,38 +195,42 @@ export default function AnalyticsPage() {
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Win Rate</p>
             <h2 className="text-3xl font-bold text-green-500">
-              {winRate}%
+              {formatPercent(winRate)}%
             </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Average ROI</p>
             <h2 className="text-3xl font-bold text-green-500">
-              {averageRoi}%
+              {formatPercent(averageRoi)}%
             </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Current Bankroll</p>
             <h2 className="text-3xl font-bold text-green-500">
-              {currentBankroll.toFixed(2)}u
+             {formatUnits(currentBankroll ?? 0)}u
             </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Best Win</p>
             <h2 className="text-3xl font-bold text-green-500">
-              +{bestWin.toFixed(2)}u
+              +{formatUnits(bestWin)}u
             </h2>
           </div>
 
           <div className="bg-zinc-900 p-6 rounded-2xl">
             <p className="text-zinc-400">Worst Loss</p>
             <h2 className="text-3xl font-bold text-red-500">
-              {worstLoss.toFixed(2)}u
+              {formatUnits(worstLoss)}u
             </h2>
           </div>
         </div>
+
+        {/* DEBUG BLOCK - Remove after verification */}
+        
+        
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <section className="bg-zinc-900 p-6 rounded-2xl">
@@ -243,7 +242,9 @@ export default function AnalyticsPage() {
                 <LineChart data={analyticsData}>
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Tooltip
+  formatter={(value) => [`${Number(value).toFixed(2)}u`, "Bankroll"]}
+/>
                   <Line
                     type="monotone"
                     dataKey="bankroll"
@@ -287,7 +288,9 @@ export default function AnalyticsPage() {
                 <LineChart data={analyticsData}>
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
-                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Tooltip
+  formatter={(value) => [`${Number(value).toFixed(2)}%`, "ROI"]}
+/>
                   <Line
                     type="monotone"
                     dataKey="avgRoi"
@@ -309,7 +312,9 @@ export default function AnalyticsPage() {
                 <LineChart data={analyticsData}>
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
-                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Tooltip
+  formatter={(value) => [`${Number(value).toFixed(2)}%`, "Win Rate"]}
+/>
                   <Line
                     type="monotone"
                     dataKey="winRate"
