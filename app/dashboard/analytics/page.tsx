@@ -95,14 +95,15 @@ export default function AnalyticsPage() {
     bankroll += profit
 
     return {
-      trade: index + 1,
-      label: `Trade ${index + 1}`,
-      cumulativeProfit,
-      avgRoi:
-        cumulativeStake > 0 ? (cumulativeProfit / cumulativeStake) * 100 : 0,
-      winRate:
-        index >= 0 ? (winsCount / (index + 1)) * 100 : 0,
-    }
+  trade: index + 1,
+  label: `Trade ${index + 1}`,
+  bankroll,
+  cumulativeProfit,
+  avgRoi:
+    cumulativeStake > 0 ? (cumulativeProfit / cumulativeStake) * 100 : 0,
+  winRate:
+    index >= 0 ? (winsCount / (index + 1)) * 100 : 0,
+}
   })
 
   // Use the last point from analyticsData as the single source of truth for cards
@@ -287,7 +288,9 @@ export default function AnalyticsPage() {
                 <LineChart data={analyticsData}>
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
-                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Tooltip
+  formatter={(value) => [`${Number(value).toFixed(2)}%`, "ROI"]}
+/>
                   <Line
                     type="monotone"
                     dataKey="avgRoi"
@@ -309,7 +312,9 @@ export default function AnalyticsPage() {
                 <LineChart data={analyticsData}>
                   <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} unit="%" />
-                  <Tooltip wrapperStyle={{ backgroundColor: '#0f172a', borderRadius: 12 }} />
+                  <Tooltip
+  formatter={(value) => [`${Number(value).toFixed(2)}%`, "Win Rate"]}
+/>
                   <Line
                     type="monotone"
                     dataKey="winRate"
